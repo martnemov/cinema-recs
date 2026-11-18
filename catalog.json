@@ -1,0 +1,15 @@
+{
+  "total": 187,
+  "categories": {
+    "film": 119,
+    "series": 37,
+    "cartoon": 6,
+    "anime": 25
+  },
+  "film_years": [
+    1947,
+    2026
+  ],
+  "rated": 1509,
+  "updated_at": "2026-11-15T16:09:42.258859+00:00"
+}

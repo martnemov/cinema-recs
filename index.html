@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#141512">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Оценки Марта на Кинопоиске и персональные рекомендации фильмов, сериалов и анимации.">
+  <title>Следующий кадр — кино для Марта</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=5">
+  <script src="data.js?v=4" defer></script>
+  <script src="ratings.js?v=4" defer></script>
+  <script src="state.js?v=4" defer></script>
+  <script src="app.js?v=5" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">К содержанию</a>
+  <header class="masthead wrap">
+    <a class="brand" href="#" aria-label="Следующий кадр — главная"><span class="brand-icon" aria-hidden="true">к.</span><span>следующий кадр</span></a>
+    <nav aria-label="Разделы">
+      <a href="#ratings" data-route="ratings">Мои оценки</a>
+      <a href="#films" data-route="films">Фильмы</a>
+      <a href="#series" data-route="series">Сериалы</a>
+      <a href="#animation" data-route="animation">Анимация и аниме</a>
+    </nav>
+    <a class="saved-nav" href="#saved" data-route="saved" aria-label="Сохранённое">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg><span id="saved-count">0</span>
+    </a>
+  </header>
+  <section class="api-sync wrap" aria-label="Обновление личных оценок"><div><strong id="sync-title" role="status">Сохранённая история оценок</strong><p id="sync-message">При открытии сайта проверяются оценки профиля martnemov.</p><progress id="sync-progress" aria-label="Загрузка страниц оценок" hidden></progress></div><button class="button secondary" id="refresh-ratings">Обновить оценки</button></section>
+  <main id="main" tabindex="-1">
+    <div id="home" class="wrap">
+      <section class="landing" aria-labelledby="landing-heading">
+        <div class="landing-copy">
+          <p class="eyebrow landing-label"><span></span> Личная кинотека Марта</p>
+          <h1 id="landing-heading">Что смотрим<br><em>дальше?</em></h1>
+          <p class="landing-lead">Ваши оценки из Кинопоиска и новые истории, подобранные по ним.</p>
+          <div class="landing-actions">
+            <a class="button primary" href="#films">Найти фильм <span aria-hidden="true">↗</span></a>
+            <a class="landing-link" href="#ratings">Открыть мои оценки <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+        <div class="filmstrip" aria-hidden="true">
+          <div class="filmstrip-track">
+            <img src="assets/cover-258687.jpg" alt="" width="268" height="402" fetchpriority="high">
+            <img src="assets/cover-4540126.jpg" alt="" width="268" height="402" fetchpriority="high">
+            <img src="assets/cover-681831.jpg" alt="" width="268" height="402">
+            <img src="assets/cover-749374.jpg" alt="" width="268" height="402">
+          </div>
+        </div>
+        <span class="filmstrip-caption">Постеры из вашей кинотеки</span>
+      </section>
+      <nav class="shelves" aria-label="Открыть раздел">
+        <a class="shelf" href="#ratings"><span class="shelf-meta" id="home-ratings">Кинопоиск</span><strong>Мои оценки</strong><span class="shelf-arrow" aria-hidden="true">↗</span></a>
+        <a class="shelf" href="#films"><span class="shelf-meta" id="home-films">По вашему вкусу</span><strong>Фильмы</strong><span class="shelf-arrow" aria-hidden="true">↗</span></a>
+        <a class="shelf" href="#series"><span class="shelf-meta" id="home-series">По вашим сериалам</span><strong>Сериалы</strong><span class="shelf-arrow" aria-hidden="true">↗</span></a>
+        <a class="shelf" href="#animation"><span class="shelf-meta" id="home-animation">Фильмы и сериалы</span><strong>Анимация и аниме</strong><span class="shelf-arrow" aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+    <section id="library" class="library wrap" aria-labelledby="library-heading" hidden>
+      <div class="section-top">
+        <div><div class="eyebrow library-kicker" id="library-kicker"></div><h1 id="library-heading" tabindex="-1"></h1><p class="section-note" id="library-note"></p></div>
+        <button class="button secondary" id="random" hidden>Случайный выбор <span aria-hidden="true">↝</span></button>
+      </div>
+      <div class="toolbar">
+        <div class="filters" id="filters" role="group" aria-label="Формат"></div>
+        <div class="tools">
+          <label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию"></label>
+          <label class="sort-label"><span class="sr-only">Сортировка</span><select id="sort"></select></label>
+        </div>
+      </div>
+      <div class="results-line">
+        <span id="result-count" aria-live="polite"></span>
+        <div class="results-meta"><button id="open-history">Мои отметки <span id="watched-count">0</span> ↗</button></div>
+      </div>
+      <div id="grid" class="grid"></div>
+      <div id="empty" class="empty" hidden><span id="empty-text"></span><button class="button secondary" id="reset">Сбросить фильтры</button></div>
+      <div class="more"><button class="button secondary" id="load-more" hidden>Показать ещё</button></div>
+    </section>
+  </main>
+  <footer class="footer wrap">
+    <a class="brand" href="#"><span class="brand-icon" aria-hidden="true">к.</span><span>следующий кадр</span></a>
+    <a href="about.html">О подборке и источниках ↗</a>
+  </footer>
+  <dialog id="detail" aria-labelledby="dialog-title">
+    <button class="close-modal icon-button" id="close-modal" aria-label="Закрыть">×</button><div id="dialog-content"></div>
+  </dialog>
+  <dialog id="history" aria-labelledby="history-title">
+    <button class="close-modal icon-button" id="close-history" aria-label="Закрыть историю">×</button>
+    <div class="history-content">
+      <h2 id="history-title">Мои отметки</h2>
+      <p>Отметки «Просмотрено» скрывают тайтлы из рекомендаций. Здесь их можно вернуть.</p>
+      <p id="history-empty">Пока нет отметок.</p><ul id="history-list"></ul>
+      <small>Эти отметки хранятся в браузере.</small>
+    </div>
+  </dialog>
+  <div id="toast" role="status" class="toast"><span id="toast-text"></span><button id="toast-undo" hidden>Отменить</button></div>
+<section class="wrap backup-controls" aria-label="Резервная копия отметок"><div><strong>Ваши отметки — с собой</strong><p>Экспорт и импорт относятся к этому браузеру и адресу. Старые отметки с chatgpt.site автоматически здесь не появятся.</p></div><div class="backup-actions"><button class="button secondary" id="export-marks">Экспорт отметок</button><button class="button secondary" id="import-marks">Импорт отметок</button><input type="file" id="marks-file" accept="application/json,.json" hidden></div><p id="backup-status" role="status"></p></section><script src="backup.js?v=1"></script></body>
+</html>

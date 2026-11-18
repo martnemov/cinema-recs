@@ -1,0 +1,11 @@
+(function(){
+'use strict';
+const savedKey='next-frame-saved',watchedKey='next-frame-watched';
+function clean(x){if(!Array.isArray(x)||x.length>20000)throw Error('Некорректный список отметок');if(x.some(id=>!Number.isSafeInteger(id)||id<1))throw Error('Некорректный ID');return [...new Set(x)];}
+function read(key){try{return clean(JSON.parse(localStorage.getItem(key)||'[]'));}catch{return [];}}
+function say(s){document.getElementById('backup-status').textContent=s;}
+document.getElementById('export-marks').addEventListener('click',()=>{try{const data={app:'next-frame',version:1,exported_at:new Date().toISOString(),saved:read(savedKey),watched:read(watchedKey)};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='cinema-marks.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);say('Отметки этого браузера экспортированы.');}catch{say('Браузер не разрешил экспорт.');}});
+document.getElementById('import-marks').addEventListener('click',()=>document.getElementById('marks-file').click());
+document.getElementById('marks-file').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>1048576)throw Error('Файл слишком большой');const data=JSON.parse(await file.text());if(data.app!=='next-frame'||data.version!==1)throw Error('Это не резервная копия отметок');const saved=clean(data.saved),watched=clean(data.watched);const oldSaved=localStorage.getItem(savedKey),oldWatched=localStorage.getItem(watchedKey);try{localStorage.setItem(savedKey,JSON.stringify([...new Set([...read(savedKey),...saved])]));localStorage.setItem(watchedKey,JSON.stringify([...new Set([...read(watchedKey),...watched])]));}catch(error){try{oldSaved===null?localStorage.removeItem(savedKey):localStorage.setItem(savedKey,oldSaved);oldWatched===null?localStorage.removeItem(watchedKey):localStorage.setItem(watchedKey,oldWatched);}catch{}throw error;}say('Отметки объединены. Перезагружаю страницу…');setTimeout(()=>location.reload(),600);}catch(error){say('Импорт не выполнен: '+error.message);}finally{event.target.value='';}});
+window.CinemaBackup={clean};
+})();
