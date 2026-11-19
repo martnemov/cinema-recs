@@ -16,9 +16,10 @@ async function startCinema() {
     const response = await fetch('/api/yandex-session', {cache: 'no-store'});
     if (response.status === 401) {
       const error = new URLSearchParams(location.search).get('auth');
-      status.textContent = error === 'failed' ? 'Войти не удалось. Попробуйте ещё раз.'
-        : error === 'unavailable' ? 'Вход временно недоступен.'
-        : 'Войдите, чтобы загрузить оценки Кинопоиска из вашего профиля.';
+      const message = error === 'failed' ? 'Войти не удалось. Попробуйте ещё раз.'
+        : error === 'unavailable' ? 'Вход временно недоступен.' : '';
+      status.textContent = message;
+      status.hidden = !message;
       document.querySelector('#yandex-login').hidden = false;
       return;
     }

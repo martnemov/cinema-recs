@@ -7,16 +7,38 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="description" content="Ваши оценки на Кинопоиске и персональные рекомендации фильмов, сериалов и анимации.">
   <title>Следующий кадр</title>
-  <script src="/auth.js?v=3" defer></script>
+  <script src="/auth.js?v=4" defer></script>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
-  <main id="sign-in" class="wrap">
-    <h1>Следующий кадр</h1>
-    <p id="auth-status" role="status">Проверяем вход…</p>
-    <a class="button" href="/api/yandex-login" hidden id="yandex-login">Войти с Яндекс ID</a>
+  <main id="sign-in" class="sign-in wrap" aria-labelledby="sign-in-title">
+    <div class="sign-in-panel">
+      <div class="sign-in-copy">
+        <div class="brand">
+          <span class="brand-icon" aria-hidden="true">к.</span>
+          <span>следующий кадр</span>
+        </div>
+        <h1 id="sign-in-title">Что смотрим <em>дальше?</em></h1>
+        <p class="sign-in-lead">Войдите, чтобы загрузить оценки Кинопоиска и получить рекомендации по своему вкусу.</p>
+        <div class="sign-in-actions">
+          <a class="button primary sign-in-button" href="/api/yandex-login" hidden id="yandex-login">
+            <span class="sign-in-yandex" aria-hidden="true">Я</span>
+            <span>Войти с Яндекс ID</span>
+            <span class="sign-in-arrow" aria-hidden="true">↗</span>
+          </a>
+          <p id="auth-status" role="status">Проверяем вход…</p>
+        </div>
+      </div>
+      <div class="sign-in-art" aria-hidden="true">
+        <div class="sign-in-strip">
+          <img src="assets/cover-258687.jpg" alt="" width="268" height="402">
+          <img src="assets/cover-4540126.jpg" alt="" width="268" height="402">
+          <img src="assets/cover-681831.jpg" alt="" width="268" height="402">
+        </div>
+      </div>
+    </div>
   </main>
   <div id="cinema-app" hidden>
   <form method="post" action="/api/yandex-session" class="wrap"><button class="button secondary">Выйти</button></form>
