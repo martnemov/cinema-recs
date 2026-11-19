@@ -5,6 +5,7 @@ const esc = value => String(value).replace(/[&<>"']/g, char => ({'&': '&amp;', '
 const items = window.CINEMA_DATA;
 const ratings = window.CINEMA_RATINGS;
 const profileId = window.CINEMA_PROFILE_ID;
+const curatedProfile = window.CINEMA_USER.login === 'martnemov' && !profileId;
 const ratingsStorageKey = profileId
   ? 'next-frame-api-ratings-v1:' + window.CINEMA_USER.id + ':kp:' + profileId
   : window.CINEMA_USER.login === 'martnemov'
@@ -23,18 +24,12 @@ const routes = {
     filters: {all: 'Все', film: 'Фильмы', series: 'Сериалы', cartoon: 'Мультфильмы', anime: 'Аниме'},
     sorts: {recent: 'По порядку в профиле', score: 'Сначала высокие оценки', year: 'Сначала новые', title: 'По названию'}},
   films: {title: 'Фильмы', kicker: 'Рекомендации', note: 'От классики до новинок. Сначала близкие вашему вкусу и более свежие фильмы.'},
-  series: {title: 'Сериалы', kicker: 'Рекомендации', note: 'Подобраны по вашим оценкам просмотренных сериалов.'},
+  series: {title: 'Сериалы', kicker: 'Рекомендации', note: 'Подборка сериалов с учётом ваших оценок.'},
   animation: {title: 'Анимация и аниме', kicker: 'Рекомендации', note: 'Мультфильмы и аниме по вашему вкусу.',
     filters: {all: 'Всё', cartoon: 'Мультфильмы', anime: 'Аниме', feature: 'Полнометражные', episodic: 'Многосерийные'}},
   saved: {title: 'Сохранённое', kicker: 'Личная кинотека', note: 'Истории, которые вы отложили на потом.'},
 };
-const pools = {
-  ratings,
-  films: items.filter(item => item.category === 'film'),
-  series: items.filter(item => item.category === 'series'),
-  animation: items.filter(CinemaState.isAnimation),
-  saved: items,
-};
+const pools = {ratings, saved: items};
 const legacyRoutes = {taste: 'home', collection: 'films'};
 const bookmark = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>';
 const check = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg>';
@@ -149,7 +144,7 @@ function recommendationCard(item) {
     <div class="card-info">
       <div class="card-title-line"><button class="card-title" data-open="${item.id}">${esc(item.title)}</button><a class="kp-rating" href="${esc(item.kinopoisk_url)}" target="_blank" rel="noopener noreferrer" aria-label="Рейтинг Кинопоиска ${item.kinopoisk_rating.toFixed(1)} из 10">${item.kinopoisk_rating.toFixed(1)}</a></div>
       <div class="card-sub">${item.year} · ${esc(item.type)}</div>
-      <div class="card-match">${esc(item.match_label)}</div>
+      ${item.match_label ? `<div class="card-match">${esc(item.match_label)}</div>` : ''}
       <button class="watched-button" data-watched="${item.id}" aria-label="Отметить как просмотренное: ${esc(item.title)}">${check}Просмотрено</button>
     </div>
   </article>`;
@@ -241,7 +236,7 @@ function openDetail(id, trigger) {
       <h2 id="dialog-title">${esc(item.title)}</h2>
       <div class="modal-original">${esc(item.original_title)}<br>${esc(item.genres.join(' · '))}</div>
       <div class="modal-rating"><strong>${rating}</strong><span>Рейтинг Кинопоиска · ${fmt.format(item.rating_count)} оценок</span></div>
-      <div class="modal-section"><h3>Почему рекомендуем</h3><p>${esc(item.why)}</p>${references.length ? `<p class="rating-references">Ваши оценки · ${references.map(ref => `«${esc(ref.title)}» ${ref.score}/10`).join(' · ')}</p>` : ''}</div>
+      ${item.why ? `<div class="modal-section"><h3>Почему рекомендуем</h3><p>${esc(item.why)}</p>${references.length ? `<p class="rating-references">Ваши оценки · ${references.map(ref => `«${esc(ref.title)}» ${ref.score}/10`).join(' · ')}</p>` : ''}</div>` : ''}
       ${item.caveat ? `<div class="modal-section"><h3>Перед просмотром</h3><p>${esc(item.caveat)}</p></div>` : ''}
       <div class="modal-buttons">
         <a class="button primary" href="${esc(item.kinopoisk_url)}" target="_blank" rel="noopener noreferrer">На Кинопоиске <span aria-hidden="true">↗</span></a>
@@ -331,6 +326,7 @@ $('#random').addEventListener('click', () => {
   if (list.length) openDetail(list[Math.floor(Math.random() * list.length)].id, $('#random'));
 });
 window.addEventListener('hashchange', () => showRoute({focus: true}));
+updateRecommendations();
 showRoute();
 
 
@@ -342,6 +338,16 @@ function validApiRatings(list) {
     item.score >= 1 && item.score <= 10 && typeof item.title === 'string' && item.title &&
     ['film','series','cartoon','anime'].includes(item.category) && ['film','series'].includes(item.format));
 }
+function updateRecommendations() {
+  const recommendations = CinemaState.recommendations(recommendationSeed, ratings, {curated: curatedProfile});
+  items.splice(0, items.length, ...recommendations);
+  byId.clear();
+  for (const item of items) byId.set(item.id, item);
+  pools.films = items.filter(item => item.category === 'film');
+  pools.series = items.filter(item => item.category === 'series');
+  pools.animation = items.filter(CinemaState.isAnimation);
+}
+
 function applyApiRatings(snapshot, save = true) {
   if (!validApiRatings(snapshot.items)) throw Error('Invalid ratings snapshot');
   const incoming = new Map(snapshot.items.map(item => [item.id, item]));
@@ -349,14 +355,7 @@ function applyApiRatings(snapshot, save = true) {
   ratings.splice(0, ratings.length, ...merged);
   ratingById.clear();
   for (const item of ratings) { ratingById.set(item.id, item); validIds.add(item.id); }
-  const ratedIds = new Set(ratings.map(item => item.id));
-  items.splice(0, items.length, ...recommendationSeed.filter(item => !ratedIds.has(item.id)));
-  byId.clear(); for (const item of items) byId.set(item.id, item);
-  pools.ratings = ratings;
-  pools.films = items.filter(item => item.category === 'film');
-  pools.series = items.filter(item => item.category === 'series');
-  pools.animation = items.filter(CinemaState.isAnimation);
-  pools.saved = items;
+  updateRecommendations();
   if ($('#detail').open && !byId.has(currentId)) $('#detail').close();
   render();
   if (save) try { storage?.setItem(ratingsStorageKey, JSON.stringify({version:1,...snapshot,items:merged})); } catch {}

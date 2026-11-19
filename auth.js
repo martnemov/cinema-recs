@@ -50,14 +50,14 @@ async function startCinema() {
       }
     });
     const useArchive = window.CINEMA_USER.login === 'martnemov' && !window.CINEMA_PROFILE_ID;
-    await Promise.all([loadScript('/data.js?v=4'), loadScript('/state.js?v=4')]);
+    await Promise.all([loadScript('/data.js?v=4'), loadScript('/state.js?v=5')]);
     if (useArchive) {
       await loadScript('/ratings.js?v=4');
     } else {
       window.CINEMA_RATINGS = [];
       window.CINEMA_LEGACY_IDS = [];
     }
-    await loadScript('/app.js?v=7');
+    await loadScript('/app.js?v=8');
     document.querySelector('.backup-controls').hidden = !useArchive;
     if (useArchive) {
       await loadScript('/backup.js?v=1');
