@@ -25,7 +25,7 @@ export default {
         try {
           try {const snapshot=await cache.get(cacheKey);if(snapshot?.items?.length&&snapshot.items.every(isRating)){previous=mergeRatings(baseline,snapshot.items);send({type:'cached',...snapshot,items:previous});}}catch{console.error(JSON.stringify({code:'RATINGS_CACHE_READ_FAILED'}));}
           send({type:'start',profile});
-          const result=await collectRatings({profile,key:process.env.KINOPOISK_API_KEY,previous,signal:request.signal,onProgress:progress=>send({type:'progress',...progress})});
+          const result=await collectRatings({profile,key:process.env.KINOPOISK_API_KEY,previous,signal:request.signal,onProgress:progress=>send({type:'progress',...progress}),onFirstPage:summary=>console.info(JSON.stringify({event:'ratings_upstream_first_page',lookup:profileId===null?'login':'numeric_id',...summary}))});
           const items=mergeRatings(previous,result.items);const snapshot={items,profile,syncedAt:new Date().toISOString(),apiCount:result.received,reportedTotal:result.reportedTotal,totalPages:result.totalPages,archivedCount:items.length-result.received,limited:result.limited};
           try {await cache.set(cacheKey,snapshot,{ttl:604800,name:'personal-ratings'});}catch{console.error(JSON.stringify({code:'RATINGS_CACHE_WRITE_FAILED'}));}
           send({type:'ratings',...snapshot});
