@@ -9,10 +9,14 @@ export default {
     if(request.method!=='GET')return Response.json({error:'METHOD_NOT_ALLOWED'},{status:405});
     const user=readSession(request);
     if(!user)return Response.json({error:'UNAUTHORIZED'},{status:401,headers:{'Cache-Control':'private, no-store'}});
-    const profile=user.login;
-    const isOwner=profile==='martnemov';
+    const profileId=new URL(request.url).searchParams.get('profile');
+    if(profileId!==null&&!/^[1-9][0-9]{0,15}$/.test(profileId)){
+      return Response.json({error:'INVALID_PROFILE_ID'},{status:400,headers:{'Cache-Control':'private, no-store'}});
+    }
+    const profile=profileId??user.login;
+    const isOwner=profileId===null&&user.login==='martnemov';
     const baseline=isOwner?seedRatings:[];
-    const cacheKey=isOwner?'last-success':`last-success:${user.id}`;
+    const cacheKey=isOwner?'last-success':`last-success:${user.id}${profileId===null?'':':kp:'+profileId}`;
     const encoder=new TextEncoder();let closed=false;
     const stream=new ReadableStream({
       async start(controller){
@@ -22,7 +26,7 @@ export default {
           try {const snapshot=await cache.get(cacheKey);if(snapshot?.items?.length&&snapshot.items.every(isRating)){previous=mergeRatings(baseline,snapshot.items);send({type:'cached',...snapshot,items:previous});}}catch{console.error(JSON.stringify({code:'RATINGS_CACHE_READ_FAILED'}));}
           send({type:'start',profile});
           const result=await collectRatings({profile,key:process.env.KINOPOISK_API_KEY,previous,signal:request.signal,onProgress:progress=>send({type:'progress',...progress})});
-          const items=mergeRatings(previous,result.items);const snapshot={items,profile,syncedAt:new Date().toISOString(),apiCount:result.received,reportedTotal:result.reportedTotal,totalPages:result.totalPages,archivedCount:items.length-result.received,limited:true};
+          const items=mergeRatings(previous,result.items);const snapshot={items,profile,syncedAt:new Date().toISOString(),apiCount:result.received,reportedTotal:result.reportedTotal,totalPages:result.totalPages,archivedCount:items.length-result.received,limited:result.limited};
           try {await cache.set(cacheKey,snapshot,{ttl:604800,name:'personal-ratings'});}catch{console.error(JSON.stringify({code:'RATINGS_CACHE_WRITE_FAILED'}));}
           send({type:'ratings',...snapshot});
           console.log(JSON.stringify({event:'ratings_sync_ok',apiCount:result.received,mergedCount:items.length,pages:result.totalPages}));

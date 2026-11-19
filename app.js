@@ -4,8 +4,11 @@ const $ = selector => document.querySelector(selector);
 const esc = value => String(value).replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
 const items = window.CINEMA_DATA;
 const ratings = window.CINEMA_RATINGS;
-const ratingsStorageKey = window.CINEMA_USER.login === 'martnemov'
-  ? 'next-frame-api-ratings-v1' : 'next-frame-api-ratings-v1:' + window.CINEMA_USER.id;
+const profileId = window.CINEMA_PROFILE_ID;
+const ratingsStorageKey = profileId
+  ? 'next-frame-api-ratings-v1:' + window.CINEMA_USER.id + ':kp:' + profileId
+  : window.CINEMA_USER.login === 'martnemov'
+    ? 'next-frame-api-ratings-v1' : 'next-frame-api-ratings-v1:' + window.CINEMA_USER.id;
 const recommendationSeed = [...items];
 const archivedRatings = [...ratings];
 const byId = new Map(items.map(item => [item.id, item]));
@@ -364,7 +367,7 @@ function showRatingsSync(snapshot, cached = false) {
   $('#sync-title').textContent = cached ? 'Показана сохранённая история' : 'Оценки обновлены из API';
   const count = Number(snapshot.apiCount) || 0;
   const archived = Math.max(0, ratings.length - count);
-  $('#sync-message').textContent = `Из API: ${fmt.format(count)} · ${archived ? `из архива: ${fmt.format(archived)} · ` : ''}${time}. Сервис отдаёт около 1500 последних оценок; остальная история сохранена.`;
+  $('#sync-message').textContent = `Из API: ${fmt.format(count)} · ${archived ? `из архива: ${fmt.format(archived)} · ` : ''}${time}.`;
 }
 async function refreshApiRatings() {
   if (ratingsSyncPending) return;
@@ -384,10 +387,15 @@ async function refreshApiRatings() {
       $('#sync-message').textContent = `Загружено страниц: ${event.page} из ${event.totalPages}. Сохранённые оценки пока доступны.`;
     }
     if (event.type === 'ratings') { applyApiRatings(event); showRatingsSync(event); completed = true; }
-    if (event.type === 'error') throw Error(event.message || 'API временно недоступен.');
+    if (event.type === 'error') {
+      const error = Error(event.message || 'API временно недоступен.');
+      error.code = event.code;
+      throw error;
+    }
   }
   try {
-    const response = await fetch('/api/ratings', {cache:'no-store',credentials:'same-origin',signal:controller.signal,headers:{Accept:'application/x-ndjson'}});
+    const endpoint = profileId ? '/api/ratings?profile=' + encodeURIComponent(profileId) : '/api/ratings';
+    const response = await fetch(endpoint, {cache:'no-store',credentials:'same-origin',signal:controller.signal,headers:{Accept:'application/x-ndjson'}});
     if (!response.ok || !response.headers.get('content-type')?.includes('application/x-ndjson')) throw Error('Не удалось получить ответ сервера.');
     if (response.body?.getReader) {
       const reader = response.body.getReader(), decoder = new TextDecoder(); let buffer = '';
@@ -400,6 +408,11 @@ async function refreshApiRatings() {
     } else { for (const line of (await response.text()).split('\n')) if (line.trim()) accept(JSON.parse(line)); }
     if (!completed) throw Error('Обновление прервано до получения всех страниц.');
   } catch (error) {
+    if (error.code === 'EMPTY_PROFILE' && !ratings.length) {
+      $('#sync-title').textContent = 'Не удалось найти оценки';
+      $('#sync-message').textContent = 'Проверьте ссылку на профиль и доступность оценок в Кинопоиске.';
+      return;
+    }
     $('#sync-title').textContent = 'Показана сохранённая история';
     $('#sync-message').textContent = `${error.name === 'AbortError' ? 'Превышено время ожидания API.' : error.message} Оценки не удалены. Попробуйте обновить позже.`;
   } finally {
