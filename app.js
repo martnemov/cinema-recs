@@ -365,7 +365,7 @@ function showRatingsSync(snapshot, cached = false) {
   const archived = Math.max(0, ratings.length - count);
   $('#sync-message').textContent = `Из API: ${fmt.format(count)} · ${archived ? `из архива: ${fmt.format(archived)} · ` : ''}${time}. Импортированы доступные оценки.`;
 }
-async function refreshApiRatings() {
+async function refreshApiRatings(force = false) {
   if (ratingsSyncPending) return;
   ratingsSyncPending = true;
   const button = $('#refresh-ratings'), progress = $('#sync-progress');
@@ -386,7 +386,7 @@ async function refreshApiRatings() {
     if (event.type === 'error') throw Error(event.message || 'API временно недоступен.');
   }
   try {
-    const response = await fetch('/api/ratings', {cache:'no-store',credentials:'same-origin',signal:controller.signal,headers:{Accept:'application/x-ndjson'}});
+    const response = await fetch('/api/ratings'+(force===true?'?refresh=1':''), {cache:'no-store',credentials:'same-origin',signal:controller.signal,headers:{Accept:'application/x-ndjson'}});
     if (!response.ok || !response.headers.get('content-type')?.includes('application/x-ndjson')) throw Error('Не удалось получить ответ сервера.');
     if (response.body?.getReader) {
       const reader = response.body.getReader(), decoder = new TextDecoder(); let buffer = '';
@@ -398,7 +398,7 @@ async function refreshApiRatings() {
       }
     } else { for (const line of (await response.text()).split('\n')) if (line.trim()) accept(JSON.parse(line)); }
     if (!completed) throw Error('Обновление прервано до получения всех страниц.');
-    await refreshRecommendations();
+    await refreshRecommendations().catch(()=>notify('Не удалось обновить рекомендации.'));
   } catch (error) {
     $('#sync-title').textContent = 'Показана сохранённая история';
     $('#sync-message').textContent = `${error.name === 'AbortError' ? 'Превышено время ожидания API.' : error.message} Оценки не удалены. Попробуйте обновить позже.`;
@@ -408,9 +408,9 @@ async function refreshApiRatings() {
 }
 try {
   const cached = JSON.parse(storage?.getItem(prefix+'next-frame-api-ratings-v1') || 'null');
-  if (cached?.version === 1 && validApiRatings(cached.items)) { applyApiRatings(cached, false); showRatingsSync(cached, true); }
+  if (cached?.version === 1 && validApiRatings(cached.items)) { const old=JSON.parse(storage?.getItem(prefix+'recommendations-v1')||'[]');if(Array.isArray(old))recommendationSeed=old;applyApiRatings(cached, false); showRatingsSync(cached, true); }
 } catch {}
-$('#refresh-ratings').addEventListener('click', refreshApiRatings);
+$('#refresh-ratings').addEventListener('click', () => refreshApiRatings(true));
 window.addEventListener('pageshow', event => { if (event.persisted) refreshApiRatings(); });
 refreshApiRatings();
 
@@ -418,4 +418,5 @@ async function refreshRecommendations(){
  const r=await fetch('/api/recommendations',{cache:'no-store'});if(!r.ok){notify('Не удалось обновить рекомендации. Попробуйте позже.');return;}
  const data=await r.json();if(!Array.isArray(data.items))return;
  recommendationSeed=data.items;applyApiRatings({items:ratings},false);
+ try{storage?.setItem(prefix+'recommendations-v1',JSON.stringify(data.items))}catch{}
 }
