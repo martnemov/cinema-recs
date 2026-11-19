@@ -4,6 +4,8 @@ const $ = selector => document.querySelector(selector);
 const esc = value => String(value).replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
 const items = window.CINEMA_DATA;
 const ratings = window.CINEMA_RATINGS;
+const ratingsStorageKey = window.CINEMA_USER.login === 'martnemov'
+  ? 'next-frame-api-ratings-v1' : 'next-frame-api-ratings-v1:' + window.CINEMA_USER.id;
 const recommendationSeed = [...items];
 const archivedRatings = [...ratings];
 const byId = new Map(items.map(item => [item.id, item]));
@@ -36,8 +38,8 @@ const check = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.
 
 let storage;
 try { storage = window.localStorage; } catch { storage = null; }
-const saved = CinemaState.readSet(storage, 'next-frame-saved', validIds);
-const watched = CinemaState.readSet(storage, 'next-frame-watched', validIds);
+const saved = CinemaState.readSet(storage, (window.CINEMA_USER.login === 'martnemov' ? 'next-frame-saved' : 'next-frame-saved:' + window.CINEMA_USER.id), validIds);
+const watched = CinemaState.readSet(storage, (window.CINEMA_USER.login === 'martnemov' ? 'next-frame-watched' : 'next-frame-watched:' + window.CINEMA_USER.id), validIds);
 let route = '', filter = 'all', query = '', sort = 'priority', limit = pageSize;
 let currentId = null, toastTimer, undoAction, dialogTrigger;
 
@@ -95,7 +97,7 @@ function toggleSaved(id) {
   if (!byId.has(id) || watched.has(id)) return;
   if (saved.has(id)) saved.delete(id);
   else saved.add(id);
-  const durable = persist('next-frame-saved', saved);
+  const durable = persist((window.CINEMA_USER.login === 'martnemov' ? 'next-frame-saved' : 'next-frame-saved:' + window.CINEMA_USER.id), saved);
   notify(durable ? saved.has(id) ? 'Добавлено в сохранённое' : 'Убрано из сохранённого' : 'Изменение действует до перезагрузки');
   render();
   if (currentId === id && $('#detail').open) {
@@ -109,7 +111,7 @@ function markWatched(id) {
   const item = byId.get(id);
   if (!item) return;
   watched.add(id);
-  const durable = persist('next-frame-watched', watched);
+  const durable = persist((window.CINEMA_USER.login === 'martnemov' ? 'next-frame-watched' : 'next-frame-watched:' + window.CINEMA_USER.id), watched);
   if ($('#detail').open) $('#detail').close();
   render();
   notify(`«${item.title}» убрано из рекомендаций${durable ? '' : ' до перезагрузки'}`, () => restoreWatched(id));
@@ -118,7 +120,7 @@ function markWatched(id) {
 
 function restoreWatched(id) {
   watched.delete(id);
-  const durable = persist('next-frame-watched', watched);
+  const durable = persist((window.CINEMA_USER.login === 'martnemov' ? 'next-frame-watched' : 'next-frame-watched:' + window.CINEMA_USER.id), watched);
   render();
   renderHistory();
   if ($('#history').open) ($('#history [data-restore]') || $('#close-history')).focus();
@@ -354,7 +356,7 @@ function applyApiRatings(snapshot, save = true) {
   pools.saved = items;
   if ($('#detail').open && !byId.has(currentId)) $('#detail').close();
   render();
-  if (save) try { storage?.setItem('next-frame-api-ratings-v1', JSON.stringify({version:1,...snapshot,items:merged})); } catch {}
+  if (save) try { storage?.setItem(ratingsStorageKey, JSON.stringify({version:1,...snapshot,items:merged})); } catch {}
 }
 function showRatingsSync(snapshot, cached = false) {
   const date = new Date(snapshot.syncedAt);
@@ -405,7 +407,7 @@ async function refreshApiRatings() {
   }
 }
 try {
-  const cached = JSON.parse(storage?.getItem('next-frame-api-ratings-v1') || 'null');
+  const cached = JSON.parse(storage?.getItem(ratingsStorageKey) || 'null');
   if (cached?.version === 1 && validApiRatings(cached.items)) { applyApiRatings(cached, false); showRatingsSync(cached, true); }
 } catch {}
 $('#refresh-ratings').addEventListener('click', refreshApiRatings);
