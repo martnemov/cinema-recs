@@ -3,8 +3,9 @@ const ttl=7*86400;
 export default {async fetch(req){try{
  const u=new URL(req.url),action=u.searchParams.get('action'),method=req.method;
  if(action==='login'&&method==='GET'){
+ if(!process.env.YANDEX_CLIENT_ID||!process.env.YANDEX_CLIENT_SECRET)return json({error:'AUTH_NOT_CONFIGURED'},503);
  const state=nonce(),verifier=nonce(),url=new URL('https://oauth.yandex.ru/authorize');
- url.search=new URLSearchParams({response_type:'code',client_id:process.env.YANDEX_CLIENT_ID,redirect_uri:origin()+'/api/auth?action=callback',scope:'login:info',state,code_challenge:challenge(verifier),code_challenge_method:'S256'});
+ url.search=new URLSearchParams({response_type:'code',client_id:process.env.YANDEX_CLIENT_ID,redirect_uri:origin()+'/api/auth?action=callback',scope:'login:info',force_confirm:'yes',state,code_challenge:challenge(verifier),code_challenge_method:'S256'});
  return redirect(url.href,[cookie('cinema_oauth',sign({kind:'oauth',state,verifier},600),600)]);
  }
  if(action==='callback'&&method==='GET'){
