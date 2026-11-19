@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const savedKey='next-frame-saved',watchedKey='next-frame-watched';
+const savedKey=window.CINEMA_STORAGE_PREFIX+'next-frame-saved',watchedKey=window.CINEMA_STORAGE_PREFIX+'next-frame-watched';
 function clean(x){if(!Array.isArray(x)||x.length>20000)throw Error('Некорректный список отметок');if(x.some(id=>!Number.isSafeInteger(id)||id<1))throw Error('Некорректный ID');return [...new Set(x)];}
 function read(key){try{return clean(JSON.parse(localStorage.getItem(key)||'[]'));}catch{return [];}}
 function say(s){document.getElementById('backup-status').textContent=s;}
