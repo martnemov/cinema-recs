@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="description" content="Ваши оценки на Кинопоиске и персональные рекомендации фильмов, сериалов и анимации.">
   <title>Следующий кадр</title>
-  <script src="/auth.js?v=4" defer></script>
+  <script src="/auth.js?v=5" defer></script>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
   <main id="sign-in" class="sign-in wrap" aria-labelledby="sign-in-title">
@@ -41,7 +41,6 @@
     </div>
   </main>
   <div id="cinema-app" hidden>
-  <form method="post" action="/api/yandex-session" class="wrap"><button class="button secondary">Выйти</button></form>
   <a class="skip" href="#main">К содержанию</a>
   <header class="masthead wrap">
     <a class="brand" href="#" aria-label="Следующий кадр — главная"><span class="brand-icon" aria-hidden="true">к.</span><span>следующий кадр</span></a>
@@ -55,11 +54,12 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg><span id="saved-count">0</span>
     </a>
   </header>
-  <form id="kp-profile-form" class="wrap">
-    <label for="kp-profile">Профиль Кинопоиска</label>
-    <input id="kp-profile" type="text" placeholder="Ссылка или ID" maxlength="300" autocomplete="off">
-    <button class="button secondary" type="submit">Применить профиль</button>
-  </form>
+  <div class="account-bar wrap">
+    <p id="account-name" class="account-name"></p>
+    <form method="post" action="/api/yandex-session">
+      <button class="button secondary" type="submit">Выйти</button>
+    </form>
+  </div>
   <section class="api-sync wrap" aria-label="Обновление личных оценок"><div><strong id="sync-title" role="status">Сохранённая история оценок</strong><p id="sync-message">При открытии сайта проверяются оценки вашего профиля.</p><progress id="sync-progress" aria-label="Загрузка страниц оценок" hidden></progress></div><button class="button secondary" id="refresh-ratings">Обновить оценки</button></section>
   <main id="main" tabindex="-1">
     <div id="home" class="wrap">

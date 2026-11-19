@@ -25,31 +25,11 @@ async function startCinema() {
     }
     if (!response.ok) throw new Error('Session unavailable');
     window.CINEMA_USER = await response.json();
+    document.querySelector('#account-name').textContent = window.CINEMA_USER.name || window.CINEMA_USER.login;
     const profileKey = 'next-frame-kp-profile:' + window.CINEMA_USER.id;
     let profileId = '';
     try { profileId = localStorage.getItem(profileKey) || ''; } catch {}
     window.CINEMA_PROFILE_ID = /^[1-9][0-9]{0,15}$/.test(profileId) ? profileId : '';
-    const field = document.querySelector('#kp-profile');
-    field.value = window.CINEMA_PROFILE_ID;
-    field.addEventListener('input', () => field.setCustomValidity(''));
-    document.querySelector('#kp-profile-form').addEventListener('submit', event => {
-      event.preventDefault();
-      const value = field.value.trim();
-      const match = /^(?:https:\/\/(?:www\.)?kinopoisk\.ru\/user\/)?([1-9][0-9]{0,15})(?:\/.*)?$/i.exec(value);
-      if (value && !match) {
-        field.setCustomValidity('Введите числовой ID или ссылку на профиль Кинопоиска.');
-        field.reportValidity();
-        return;
-      }
-      try {
-        if (match) localStorage.setItem(profileKey, match[1]);
-        else localStorage.removeItem(profileKey);
-        location.reload();
-      } catch {
-        field.setCustomValidity('Браузер не смог сохранить профиль.');
-        field.reportValidity();
-      }
-    });
     const useArchive = window.CINEMA_USER.login === 'martnemov' && !window.CINEMA_PROFILE_ID;
     await Promise.all([loadScript('/data.js?v=4'), loadScript('/state.js?v=5')]);
     if (useArchive) {
