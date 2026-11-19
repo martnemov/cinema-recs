@@ -181,9 +181,35 @@ body:has(#home:not([hidden])) .footer{margin-top:45px}
 }
 
 .sign-in-arrow {
+  position: relative;
+  width: 12px;
+  height: 12px;
   margin-left: auto;
-  padding-left: 17px;
-  font-size: 17px;
+  flex: none;
+}
+
+.sign-in-arrow::before,
+.sign-in-arrow::after {
+  position: absolute;
+  content: "";
+}
+
+.sign-in-arrow::before {
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 7px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+}
+
+.sign-in-arrow::after {
+  top: 5px;
+  left: 0;
+  width: 14px;
+  height: 1.5px;
+  transform: rotate(-45deg);
+  background: currentColor;
 }
 
 #auth-status {
@@ -200,6 +226,7 @@ body:has(#home:not([hidden])) .footer{margin-top:45px}
   position: relative;
   display: grid;
   min-width: 0;
+  overflow: hidden;
   place-items: center;
   isolation: isolate;
   background: radial-gradient(ellipse at 65% 45%, #455138 0%, #262d20 50%, #1c1e16 78%);
@@ -281,7 +308,6 @@ body:has(#home:not([hidden])) .footer{margin-top:45px}
 
   .sign-in-art {
     height: clamp(170px, 45vw, 240px);
-    overflow: hidden;
   }
 
   .sign-in-art::after {
