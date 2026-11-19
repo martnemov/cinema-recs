@@ -1,4 +1,5 @@
 import {getCache} from '@vercel/functions';
+import {seedRatings} from '../lib/seed-ratings.mjs';
 import {session,json} from '../lib/auth.mjs';
 import {collectRatings,mergeRatings,isRating} from '../lib/ratings-core.mjs';
 const cache=getCache({namespace:'cinema-user-ratings-v2'});
@@ -7,14 +8,15 @@ export default {
   fetch(request) {
     if(request.method!=='GET')return Response.json({error:'METHOD_NOT_ALLOWED'},{status:405});
     const user=session(request);if(!user?.profile)return json({error:'UNAUTHORIZED'},401);
+    const isOwner=process.env.LEGACY_OWNER_YANDEX_ID===user.id&&user.profile==='martnemov';
     const cacheKey=JSON.stringify([user.id,user.profile]);
     const encoder=new TextEncoder();let closed=false;
     const stream=new ReadableStream({
       async start(controller){
         const send=data=>{if(!closed)try{controller.enqueue(encoder.encode(JSON.stringify(data)+'\n'));}catch{closed=true;}};
-        let previous=[];
+        let previous=isOwner?seedRatings:[];
         try {
-          try {const snapshot=await cache.get(cacheKey);if(snapshot?.items?.length&&snapshot.items.every(isRating)){previous=mergeRatings([],snapshot.items);send({type:'cached',...snapshot,items:previous});}}catch{console.error(JSON.stringify({code:'RATINGS_CACHE_READ_FAILED'}));}
+          try {const snapshot=await cache.get(cacheKey);if(snapshot?.items?.length&&snapshot.items.every(isRating)){previous=mergeRatings(previous,snapshot.items);send({type:'cached',...snapshot,items:previous});if(!new URL(request.url).searchParams.has('refresh')&&Date.now()-Date.parse(snapshot.syncedAt)<21600000){send({type:'ratings',...snapshot,items:previous});return;}}}catch{console.error(JSON.stringify({code:'RATINGS_CACHE_READ_FAILED'}));}
           send({type:'start',profile:user.profile});
           const result=await collectRatings({profileId:user.profile,key:process.env.KINOPOISK_API_KEY,previous,signal:request.signal,onProgress:progress=>send({type:'progress',...progress})});
           const items=mergeRatings(previous,result.items);const snapshot={items,profile:user.profile,syncedAt:new Date().toISOString(),apiCount:result.received,reportedTotal:result.reportedTotal,totalPages:result.totalPages,archivedCount:items.length-result.received,limited:result.limited};
